@@ -93,6 +93,22 @@
             object-fit: cover;
         }
 
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        video::-moz-media-controls {
+            display: none !important;
+        }
+
+        video::-ms-media-controls {
+            display: none !important;
+        }
+
+        video::-o-media-controls {
+            display: none !important;
+        }
+
         .video-container.active {
             opacity: 1;
         }
@@ -140,7 +156,7 @@
         <img src="/static/frame3.png" class="frame" alt="frame 3">
     </div>
 
-    <video id="hypno-video" class="video-container" src="/static/hypno_trimmed.webm" muted playsinline></video>
+    <video id="hypno-video" class="video-container" src="/static/hypno_trimmed.webm" muted playsinline controls="false"></video>
 
     <img src="/static/buttonclickme.png" class="click-me-button" alt="click me button">
     <img src="/static/backbutton.png" class="back-button" alt="back button">
