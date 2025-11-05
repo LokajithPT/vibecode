@@ -82,15 +82,15 @@
         }
 
         .video-container {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             opacity: 0;
             transition: opacity 1s ease-in-out;
             z-index: 5;
-            object-fit: fill;
+            object-fit: cover;
         }
 
         .video-container.active {
@@ -189,10 +189,24 @@
             setTimeout(() => {
                 hypnoVideo.classList.add('active');
                 hypnoVideo.play();
+                
+                // Enter fullscreen mode
+                if (hypnoVideo.requestFullscreen) {
+                    hypnoVideo.requestFullscreen();
+                } else if (hypnoVideo.webkitRequestFullscreen) { /* Safari */
+                    hypnoVideo.webkitRequestFullscreen();
+                } else if (hypnoVideo.msRequestFullscreen) { /* IE11 */
+                    hypnoVideo.msRequestFullscreen();
+                }
             }, 1000); // Delay to match the fade-out transition
         });
 
         hypnoVideo.addEventListener('ended', () => {
+            // Exit fullscreen when video ends
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            
             hypnoVideo.classList.remove('active'); // Start video fade-out
             hypnoVideo.pause();
             hypnoVideo.currentTime = 0; // Reset video to start
@@ -212,7 +226,7 @@
                         nahjustImg.classList.remove('visible');
                         nahjustkiddinImg.classList.add('visible');
                         
-                        // Show back button and go down button after final image appears
+                        // Show back button after final image appears
                         setTimeout(() => {
                             backButton.classList.add('visible');
                             backButton.classList.add('slide-to-left');
@@ -224,6 +238,11 @@
         });
 
         backButton.addEventListener('click', () => {
+            // Exit fullscreen if still in fullscreen mode
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            
             backButton.classList.remove('slide-to-left');
             backButton.classList.remove('visible');
             hypnoVideo.classList.remove('active');
