@@ -1,7 +1,9 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars, Text, Float, MeshDistortMaterial } from '@react-three/drei'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import * as THREE from 'three'
+import BlenderModel from './BlenderModel'
+import { useTexture } from '@react-three/drei'
 
 function AnimatedBox() {
   const meshRef = useRef()
@@ -81,6 +83,30 @@ function ParticleField() {
   )
 }
 
+function XoBoard() {
+  const meshRef = useRef()
+  
+  // Load the texture
+  const texture = useTexture('/xoboardu.png')
+  
+  return (
+    <Float speed={3} rotationIntensity={1} floatIntensity={2}>
+      <mesh 
+        ref={meshRef} 
+        scale={[4, 4, 4]}
+      >
+        <planeGeometry args={[2, 2]} />
+        <meshStandardMaterial 
+          map={texture} 
+          transparent={true}
+          alphaTest={0.1}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </Float>
+  )
+}
+
 export default function ThreeScene() {
   return (
     <div style={{ height: '100vh', width: '100%', background: 'black' }}>
@@ -89,11 +115,8 @@ export default function ThreeScene() {
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff00ff" />
         
-        <AnimatedBox />
-        <AnimatedSphere />
-        <AnimatedTorus />
-        <FloatingText />
-        <ParticleField />
+        {/* XO Board in the center */}
+        <XoBoard />
         
         <Stars 
           radius={100} 
