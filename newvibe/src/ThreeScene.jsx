@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, Text, Float, MeshDistortMaterial } from '@react-three/drei'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import BlenderModel from './BlenderModel'
 import { useTexture } from '@react-three/drei'
@@ -83,12 +83,99 @@ function ParticleField() {
   )
 }
 
-function XoBoard() {
+// Pre-load textures
+function TextureLoader() {
+  const xTextures = [
+    useTexture('/x1.png'),
+    useTexture('/x2.png'),
+    useTexture('/x3.png')
+  ]
+  const oTextures = [
+    useTexture('/o1.png'),
+    useTexture('/o2.png'),
+    useTexture('/o3.png')
+  ]
+  return { xTextures, oTextures }
+}
+
+function XPiece({ position, isVisible, xTextures }) {
+  const meshRef = useRef()
+  const [scale, setScale] = useState(0)
+  const [textureIndex] = useState(() => Math.floor(Math.random() * 3))
+
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => setScale(1), 100)
+      return () => clearTimeout(timer)
+    } else {
+      setScale(0)
+    }
+  }, [isVisible])
+
+  useFrame(() => {
+    if (meshRef.current && isVisible) {
+      meshRef.current.rotation.z += 0.005
+    }
+  })
+
+  if (!isVisible) return null
+
+  return (
+    <mesh ref={meshRef} position={position} rotation={[0, 0, Math.PI / 12]} scale={[scale, scale, scale]}>
+      <planeGeometry args={[1.2, 1.2]} />
+      <meshStandardMaterial 
+        map={xTextures[textureIndex]} 
+        transparent={true}
+        alphaTest={0.1}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  )
+}
+
+function OPiece({ position, isVisible, oTextures }) {
+  const meshRef = useRef()
+  const [scale, setScale] = useState(0)
+  const [textureIndex] = useState(() => Math.floor(Math.random() * 3))
+
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => setScale(1), 100)
+      return () => clearTimeout(timer)
+    } else {
+      setScale(0)
+    }
+  }, [isVisible])
+
+  useFrame(() => {
+    if (meshRef.current && isVisible) {
+      meshRef.current.rotation.z += 0.005
+    }
+  })
+
+  if (!isVisible) return null
+
+  return (
+    <mesh ref={meshRef} position={position} rotation={[0, 0, Math.PI / 12]} scale={[scale, scale, scale]}>
+      <planeGeometry args={[1.2, 1.2]} />
+      <meshStandardMaterial 
+        map={oTextures[textureIndex]} 
+        transparent={true}
+        alphaTest={0.1}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  )
+}
+
+// Pre-load textures outside components
+function XoBoard({ grid }) {
   const meshRef = useRef()
   const groupRef = useRef()
   
   // Load the texture
   const texture = useTexture('/xoboardu.png')
+  const { xTextures, oTextures } = TextureLoader()
   
   useFrame(({ camera }) => {
     if (groupRef.current) {
@@ -101,6 +188,18 @@ function XoBoard() {
       )
     }
   })
+
+  // Calculate positions for grid cells on the board with much bigger gaps
+  const getBoardPosition = (index) => {
+    const row = Math.floor(index / 3)
+    const col = index % 3
+    const x = (col - 1) * 2.5 - 1.5
+    const y = (1 - row) * 2.5
+    // Move left column (col === 0) down and right a bit
+    const adjustedY = col === 0 ? y - 1.0 : col === 1 ? y - 0.3 : y
+    const adjustedX = col === 0 ? x + 0.5 : col === 1 ? x + 0.3 : x
+    return [adjustedX, adjustedY, 0.1]
+  }
   
   return (
     <Float speed={3} rotationIntensity={1} floatIntensity={2}>
@@ -117,12 +216,23 @@ function XoBoard() {
             side={THREE.DoubleSide}
           />
         </mesh>
+        
+        {/* Render X and O pieces on the board */}
+        {grid.map((cell, index) => {
+          const position = getBoardPosition(index)
+          return (
+            <group key={index}>
+              <XPiece position={position} isVisible={cell === 'X'} xTextures={xTextures} />
+              <OPiece position={position} isVisible={cell === 'O'} oTextures={oTextures} />
+            </group>
+          )
+        })}
       </group>
     </Float>
   )
 }
 
-export default function ThreeScene() {
+export default function ThreeScene({ grid }) {
   return (
     <div style={{ height: '100vh', width: '100%', background: 'black' }}>
       <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
@@ -131,7 +241,7 @@ export default function ThreeScene() {
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff00ff" />
         
         {/* XO Board in the center */}
-        <XoBoard />
+        <XoBoard grid={grid} />
         
         <Stars 
           radius={100} 
