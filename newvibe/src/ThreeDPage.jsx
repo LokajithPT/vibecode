@@ -11,12 +11,107 @@ function ThreeDPage() {
     navigate('/')
   }
 
+  const checkWinner = (board) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+      [0, 4, 8], [2, 4, 6] // diagonals
+    ]
+    
+    for (let [a, b, c] of lines) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return board[a]
+      }
+    }
+    return null
+  }
+
+  const minimax = (board, depth, isMaximizing) => {
+    const winner = checkWinner(board)
+    
+    if (winner === 'O') return 10 - depth
+    if (winner === 'X') return depth - 10
+    if (board.every(cell => cell !== null)) return 0
+    
+    if (isMaximizing) {
+      let bestScore = -Infinity
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === null) {
+          board[i] = 'O'
+          const score = minimax(board, depth + 1, false)
+          board[i] = null
+          bestScore = Math.max(score, bestScore)
+        }
+      }
+      return bestScore
+    } else {
+      let bestScore = Infinity
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === null) {
+          board[i] = 'X'
+          const score = minimax(board, depth + 1, true)
+          board[i] = null
+          bestScore = Math.min(score, bestScore)
+        }
+      }
+      return bestScore
+    }
+  }
+
+  const getBestMove = (board) => {
+    let bestScore = -Infinity
+    let bestMove = -1
+    
+    for (let i = 0; i < 9; i++) {
+      if (board[i] === null) {
+        board[i] = 'O'
+        const score = minimax(board, 0, false)
+        board[i] = null
+        
+        if (score > bestScore) {
+          bestScore = score
+          bestMove = i
+        }
+      }
+    }
+    
+    return bestMove
+  }
+
   const handleGridClick = (index) => {
-    if (grid[index] === null) {
+    if (grid[index] === null && currentPlayer === 'X') {
       const newGrid = [...grid]
-      newGrid[index] = currentPlayer
+      newGrid[index] = 'X'
       setGrid(newGrid)
-      setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X')
+      
+      // Check if user won
+      if (checkWinner(newGrid) === 'X') {
+        setTimeout(() => alert('You won! (This shouldn\'t happen...)'), 100)
+        return
+      }
+      
+      // Check if draw
+      if (newGrid.every(cell => cell !== null)) {
+        setTimeout(() => alert('Draw!'), 100)
+        return
+      }
+      
+      // Computer move
+      setTimeout(() => {
+        const computerMove = getBestMove([...newGrid])
+        if (computerMove !== -1) {
+          const finalGrid = [...newGrid]
+          finalGrid[computerMove] = 'O'
+          setGrid(finalGrid)
+          
+          // Check if computer won
+          if (checkWinner(finalGrid) === 'O') {
+            setTimeout(() => alert('Computer wins! Impossible to beat!'), 100)
+          } else if (finalGrid.every(cell => cell !== null)) {
+            setTimeout(() => alert('Draw!'), 100)
+          }
+        }
+      }, 500)
     }
   }
 
@@ -100,14 +195,14 @@ function ThreeDPage() {
       {/* Current player indicator */}
       <div style={{
         position: 'absolute',
-        bottom: '220px',
+        bottom: '240px',
         left: '20px',
         color: 'white',
         fontSize: '18px',
         fontWeight: 'bold',
         zIndex: 1000,
       }}>
-        Current: <span style={{ color: currentPlayer === 'X' ? '#ff00ff' : '#00ffff' }}>{currentPlayer}</span>
+        Your turn (X)
       </div>
       
       {/* Back button to return to main experience */}
