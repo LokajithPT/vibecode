@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ThreeScene from './ThreeScene'
 
 function ThreeDPage() {
   const navigate = useNavigate()
   const [grid, setGrid] = useState(Array(9).fill(null))
-  const [currentPlayer, setCurrentPlayer] = useState('X')
+  const [gameOver, setGameOver] = useState(false)
+  const [shatter, setShatter] = useState(false)
+  const [hideUI, setHideUI] = useState(false)
 
   const handleBackToMain = () => {
     navigate('/')
@@ -78,8 +80,30 @@ function ThreeDPage() {
     return bestMove
   }
 
+  const handleLoserClick = () => {
+    // Remove blur overlay immediately
+    setGameOver(false)
+    
+    // Start board vanishing animation
+    setTimeout(() => {
+      setShatter(true)
+    }, 100)
+    
+    // Hide UI elements after board starts vanishing
+    setTimeout(() => {
+      setHideUI(true)
+    }, 1000)
+    
+    // Reset everything after animations complete
+    setTimeout(() => {
+      setGrid(Array(9).fill(null))
+      setShatter(false)
+      // Keep hideUI true - UI stays hidden forever
+    }, 3000)
+  }
+
   const handleGridClick = (index) => {
-    if (grid[index] === null && currentPlayer === 'X') {
+    if (grid[index] === null && !gameOver) {
       const newGrid = [...grid]
       newGrid[index] = 'X'
       setGrid(newGrid)
@@ -106,7 +130,7 @@ function ThreeDPage() {
           
           // Check if computer won
           if (checkWinner(finalGrid) === 'O') {
-            setTimeout(() => alert('Computer wins! Impossible to beat!'), 100)
+            setTimeout(() => setGameOver(true), 100)
           } else if (finalGrid.every(cell => cell !== null)) {
             setTimeout(() => alert('Draw!'), 100)
           }
@@ -122,7 +146,95 @@ function ThreeDPage() {
       height: '100vh',
       cursor: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'8\' fill=\'none\' stroke=\'white\' stroke-width=\'2\'/%3E%3C/svg%3E") 10 10, auto'
     }}>
-      <ThreeScene grid={grid} />
+      <ThreeScene grid={grid} shatter={shatter} />
+      
+      {/* Game Over Overlay */}
+      {gameOver && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 2000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.5s ease-in',
+        }}>
+          <img 
+            src="/youlost.png"
+            style={{
+              width: '400px',
+              height: 'auto',
+              marginBottom: '50px',
+              animation: 'scaleIn 0.8s ease-out',
+            }}
+            alt="you lost"
+          />
+          
+          <button
+            onClick={handleLoserClick}
+            style={{
+              padding: '15px 30px',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              backgroundColor: '#ff00ff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              animation: 'pulse 1s infinite',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'scale(1.1)'
+              e.target.style.backgroundColor = '#ff66ff'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'scale(1)'
+              e.target.style.backgroundColor = '#ff00ff'
+            }}
+          >
+            I'm a loser
+          </button>
+        </div>
+      )}
+      
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+          from { transform: scale(0); }
+          to { transform: scale(1); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      `}</style>
+      
+      {/* Current player indicator */}
+      <img 
+        src="/yourturn.png"
+        style={{
+          position: 'absolute',
+          bottom: hideUI ? '-500px' : '240px',
+          left: '20px',
+          width: '150px',
+          zIndex: 1000,
+          transition: 'all 1s ease-in',
+          opacity: hideUI ? 0 : 1,
+        }}
+        alt="your turn"
+      />
       
       {/* 3x3 Grid in bottom left */}
       <div style={{
@@ -130,6 +242,8 @@ function ThreeDPage() {
         bottom: '220px',
         left: '20px',
         zIndex: 1000,
+        transition: 'all 1s ease-in',
+        opacity: hideUI ? 0 : 1,
       }}>
         <img 
           src="/sidegrid.png"
@@ -170,39 +284,26 @@ function ThreeDPage() {
                   transition: 'all 0.3s ease',
                   marginLeft: col === 1 ? '-10px' : col === 2 ? '-35px' : '0px',
                 }}
-            >
-              {cell && (
-                <img 
-                  src={
-                    cell === 'X' 
-                      ? `/sx${((index % 3) + 1)}.png`
-                      : `/so${((index % 3) + 1)}.png`
-                  }
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    objectFit: 'contain',
-                  }}
-                  alt={cell}
-                />
-              )}
-            </div>
+              >
+                {cell && (
+                  <img 
+                    src={
+                      cell === 'X' 
+                        ? `/sx${((index % 3) + 1)}.png`
+                        : `/so${((index % 3) + 1)}.png`
+                    }
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      objectFit: 'contain',
+                    }}
+                    alt={cell}
+                  />
+                )}
+              </div>
             )
           })}
         </div>
-      </div>
-
-      {/* Current player indicator */}
-      <div style={{
-        position: 'absolute',
-        bottom: '240px',
-        left: '20px',
-        color: 'white',
-        fontSize: '18px',
-        fontWeight: 'bold',
-        zIndex: 1000,
-      }}>
-        Your turn (X)
       </div>
       
       {/* Back button to return to main experience */}

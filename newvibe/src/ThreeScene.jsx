@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stars, Text, Float, MeshDistortMaterial } from '@react-three/drei'
+import { OrbitControls, Stars, Float, MeshDistortMaterial } from '@react-three/drei'
 import { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import BlenderModel from './BlenderModel'
@@ -169,7 +169,7 @@ function OPiece({ position, isVisible, oTextures }) {
 }
 
 // Pre-load textures outside components
-function XoBoard({ grid }) {
+function XoBoard({ grid, shatter }) {
   const meshRef = useRef()
   const groupRef = useRef()
   
@@ -179,13 +179,27 @@ function XoBoard({ grid }) {
   
   useFrame(({ camera }) => {
     if (groupRef.current) {
-      // Make the group face the camera smoothly
-      groupRef.current.quaternion.slerp(
-        new THREE.Quaternion().setFromEuler(
-          new THREE.Euler(0, camera.rotation.y, 0, 'YXZ')
-        ),
-        0.1
-      )
+      if (shatter) {
+        // Shoot straight into camera view direction
+        const direction = new THREE.Vector3()
+        camera.getWorldDirection(direction)
+        
+        groupRef.current.position.addScaledVector(direction, 0.5)
+        groupRef.current.scale.multiplyScalar(0.92)
+        
+        // Collapse completely
+        if (meshRef.current && meshRef.current.material) {
+          meshRef.current.material.opacity = Math.max(0, meshRef.current.material.opacity - 0.03)
+        }
+      } else {
+        // Normal floating behavior
+        groupRef.current.quaternion.slerp(
+          new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(0, camera.rotation.y, 0, 'YXZ')
+          ),
+          0.1
+        )
+      }
     }
   })
 
@@ -232,7 +246,12 @@ function XoBoard({ grid }) {
   )
 }
 
-export default function ThreeScene({ grid }) {
+function ShatterEffect({ active }) {
+  // No particles - completely removed
+  return null
+}
+
+export default function ThreeScene({ grid, shatter }) {
   return (
     <div style={{ height: '100vh', width: '100%', background: 'black' }}>
       <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
@@ -241,17 +260,23 @@ export default function ThreeScene({ grid }) {
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff00ff" />
         
         {/* XO Board in the center */}
-        <XoBoard grid={grid} />
+        <XoBoard grid={grid} shatter={shatter} />
         
-        <Stars 
-          radius={100} 
-          depth={50} 
-          count={5000} 
-          factor={4} 
-          saturation={0} 
-          fade 
-          speed={1}
-        />
+        {/* Shatter Effect */}
+        <ShatterEffect active={shatter} />
+        
+        {/* Stars removed during shatter */}
+        {!shatter && (
+          <Stars 
+            radius={100} 
+            depth={50} 
+            count={5000} 
+            factor={4} 
+            saturation={0} 
+            fade 
+            speed={1}
+          />
+        )}
         
         <OrbitControls 
           enableZoom={true} 
