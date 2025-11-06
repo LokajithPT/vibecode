@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, Text, Float, MeshDistortMaterial } from '@react-three/drei'
 import { useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -85,24 +85,39 @@ function ParticleField() {
 
 function XoBoard() {
   const meshRef = useRef()
+  const groupRef = useRef()
   
   // Load the texture
   const texture = useTexture('/xoboardu.png')
   
+  useFrame(({ camera }) => {
+    if (groupRef.current) {
+      // Make the group face the camera smoothly
+      groupRef.current.quaternion.slerp(
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(0, camera.rotation.y, 0, 'YXZ')
+        ),
+        0.1
+      )
+    }
+  })
+  
   return (
     <Float speed={3} rotationIntensity={1} floatIntensity={2}>
-      <mesh 
-        ref={meshRef} 
-        scale={[4, 4, 4]}
-      >
-        <planeGeometry args={[2, 2]} />
-        <meshStandardMaterial 
-          map={texture} 
-          transparent={true}
-          alphaTest={0.1}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+      <group ref={groupRef}>
+        <mesh 
+          ref={meshRef} 
+          scale={[4, 4, 4]}
+        >
+          <planeGeometry args={[2, 2]} />
+          <meshStandardMaterial 
+            map={texture} 
+            transparent={true}
+            alphaTest={0.1}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
     </Float>
   )
 }
