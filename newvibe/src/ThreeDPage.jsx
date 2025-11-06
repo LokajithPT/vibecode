@@ -75,9 +75,23 @@ function ThreeDPage() {
                   transition: 'all 0.3s ease',
                   marginLeft: col === 1 ? '-10px' : col === 2 ? '-35px' : '0px',
                 }}
-              >
-                {cell}
-              </div>
+            >
+              {cell && (
+                <img 
+                  src={
+                    cell === 'X' 
+                      ? `/sx${((index % 3) + 1)}.png`
+                      : `/so${((index % 3) + 1)}.png`
+                  }
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    objectFit: 'contain',
+                  }}
+                  alt={cell}
+                />
+              )}
+            </div>
             )
           })}
         </div>
